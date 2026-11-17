@@ -13,7 +13,7 @@ import {
   setSLDAttributes,
 } from './sld-attributes.js';
 import { updateSLDAttributes } from './sld-attribute-edits.js';
-import { privType, sldNs, uuid, xmlnsNs, hasSldNamespace, defaultSldNsPrefix } from '../foundations.js';
+import { privType, sclNs, sldNs, uuid, xmlnsNs, hasSldNamespace, defaultSldNsPrefix } from '../foundations.js';
 
 import { isInsert, isSetAttributes } from '@openscd/oscd-api/utils.js';
 
@@ -578,12 +578,22 @@ export function shiftDescendantEdits(
   dy: number,
   nsp: string,
 ): EditV2[] {
-  return Array.from(
-    element.querySelectorAll(
-      'Bay, ConductingEquipment, PowerTransformer, Vertex',
-    ),
-  )
-    .concat(iedReferences(element))
+  const sclElements = Array.from(element.getElementsByTagNameNS(sclNs, '*'));
+  const vertexElements = Array.from(element.querySelectorAll('Vertex')); 
+  const iedReferenceElements = iedReferences(element);
+
+  const descendants = [
+    ...sclElements,
+    ...vertexElements,
+    ...iedReferenceElements,
+  ];
+
+  return descendants
+    // Only shift descendants with explicitly stored x and y coordinates.
+    .filter(descendant =>
+      getSLDAttributes(descendant, 'x') !== null &&
+      getSLDAttributes(descendant, 'y') !== null,
+    )
     .map((descendant) => {
       const {
         pos: [descX, descY],
